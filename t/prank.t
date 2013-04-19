@@ -14,3 +14,4 @@ ok $httpd;
 
 my $obj = PrankCall->new(host => 'http://127.0.0.1', port => $httpd->port);
 $obj->get(path => '/', params => { 'foo' => 'bar' });
+sleep 2;

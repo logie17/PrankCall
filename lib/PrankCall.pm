@@ -4,6 +4,7 @@ use warnings;
 
 use HTTP::Request;
 use IO::Socket;
+use Socket;
 use URI;
 
 # ABSTRACT: PrankCall Fast non blocking GET requests
@@ -41,8 +42,7 @@ sub get {
     eval {
       my $remote = IO::Socket::INET->new( Proto => 'tcp', PeerAddr => $self->{raw_host}, PeerPort => $self->{port} ) || die "Ah shoot Johny $!";
       $remote->autoflush(1);
-      print $remote $http_string;
-      my $line = <$remote>;
+      $remote->send($http_string);
       close $remote;
     };
     $@;
@@ -50,6 +50,7 @@ sub get {
 
   if ($error) {
     # TODO if they want errors?
+    warn $error;
   }
   
 }
