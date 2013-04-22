@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 4;
+use Test::More tests => 5;
 use Test::Fake::HTTPD;
 use HTTP::Request;
 
@@ -37,5 +37,18 @@ $httpd = run_http_server {
 
 $obj = $class->new;
 $obj->get( request_obj => HTTP::Request->new(GET => join('/', $httpd->endpoint, 'http_request')));
+
+$httpd = run_http_server {
+  my $request = shift;
+  my $path = $request->uri->path;
+  if ( $path eq '/http_post_request' ) {
+    $called++;
+  }
+  is $called, 1;
+  return [ 200 , [ 'Content-Type' => 'text/plain'], ['Success!'] ];
+};
+
+$obj = $class->new;
+$obj->post( request_obj => HTTP::Request->new(POST => join('/', $httpd->endpoint, 'http_post_request')));
 
 sleep 2;

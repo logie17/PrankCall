@@ -21,20 +21,39 @@ sub new {
 sub get {
   my ($self, %params) = @_;  
 
-  my $req = $params{request_obj} || do {
-    my $path = $params{path};
-    my $params = $params{params};
+  my $req = $params{request_obj} || $self->_build_request(method => 'GET', %params);
+  $self->_send_request($req);
 
-    my $uri = URI->new($self->{host});
-    $uri->path($path);
-    $uri->port($self->{port});
-    $uri->query_form($params);
+  return 1;
+}
 
-    my $req = HTTP::Request->new(GET => $uri->as_string);
-    $req;
-  };
+sub post {
+  my ($self, %params) = @_;
 
+  my $req = $params{request_obj} || $self->_build_request(method => 'POST', %params);
+  $self->_send_request($req);
+
+  return 1;
+}
+
+sub _build_request {
+  my ($self, %params) = @_;
+  my $path = $params{path};
+  my $params = $params{params};
+
+  my $uri = URI->new($self->{host});
+  $uri->path($path);
+  $uri->port($self->{port});
+  $uri->query_form($params);
+
+  my $req = HTTP::Request->new($params{method} => $uri->as_string);
   $req->protocol("HTTP/1.1");
+  return $req;
+}
+
+sub _send_request {
+  my ($self, $req) = @_;
+
   my $http_string = $req->as_string;
   my $port = $req->uri->port;
   my $raw_host = $req->uri->host;
@@ -54,8 +73,6 @@ sub get {
     # TODO if they want errors?
     warn $error;
   }
-
-  return 1;
 }
 
 1;
@@ -74,6 +91,7 @@ PrankCall - call remote services and hang up without waiting for a response
     );
 
     $prank->get(path => '/', params => { 'bobby' => 'darin' }); # note, prank calls always succeed
+    $prank->post(path => '/', params => { 'pizza' => 'hut' }); # note, prank calls always succeed
 
 =head1 DESCRIPTION
 
