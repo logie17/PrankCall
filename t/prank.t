@@ -25,10 +25,6 @@ ok $httpd;
 $obj = $class->new(host => 'http://127.0.0.1', port => $httpd->port);
 $obj->get(path => '/', params => { 'foo' => 'bar' });
 
-# This is sort of silly, but we have a async web server we need to have
-# in sync.
-sleep 2;
-
 $httpd = run_http_server {
   my $request = shift;
   my $path = $request->uri->path;
@@ -39,7 +35,7 @@ $httpd = run_http_server {
   return [ 200 , [ 'Content-Type' => 'text/plain'], ['Success!'] ];
 };
 
-$obj = $class->new(request_obj => HTTP::Request->new(GET => join('/', $httpd->endpoint, 'http_request')));
-$obj->get;
+$obj = $class->new;
+$obj->get( request_obj => HTTP::Request->new(GET => join('/', $httpd->endpoint, 'http_request')));
 
 sleep 2;
