@@ -8,6 +8,7 @@ use warnings;
 use HTTP::Headers;
 use HTTP::Request;
 use IO::Socket;
+use Try::Tiny;
 use URI;
 
 sub new {
@@ -27,7 +28,7 @@ sub new {
     host => $host,
     port => $port,
     raw_host => $raw_host,
-    cb => $params{cb},
+    callback => $params{callback},
   };
 
   bless $self, $class;
@@ -85,23 +86,17 @@ sub _send_request {
   my $port = $self->{port} || $req->uri->port || '80';
   my $raw_host =  $self->{raw_host} || $req->uri->host;
 
-  my $error = do {
-    local $@;
-    eval {
-      my $remote = IO::Socket::INET->new( Proto => 'tcp', PeerAddr => $raw_host, PeerPort => $port ) || die "Ah shoot Johny $!";
-      $remote->autoflush(1);
-      $remote->send($http_string);
-      close $remote;
-      if ( $self->{cb}) {
-        $self->{cb}();
-      }
-    };
-    $@;
+  try {
+    my $remote = IO::Socket::INET->new( Proto => 'tcp', PeerAddr => $raw_host, PeerPort => $port ) || die "Ah shoot Johny $!";
+    $remote->autoflush(1);
+    $remote->send($http_string);
+    close $remote;
+    if ( $self->{callback}) {
+      $self->{callback}();
+    }
+  } catch {
+    $self->{callback}($_);
   };
-
-  if ($error && $self->{cb} ) {
-    $self->{cb}($error);
-  }
 }
 
 1;
@@ -117,7 +112,7 @@ PrankCall - call remote services and hang up without waiting for a response
     my $prank = PrankCall->new(
         host => 'somewhere.beyond.the.sea',
         port => '10827',
-        cb => sub {
+        callback => sub {
           my $error = pop;
           # Callback called after service has been called
         }
@@ -133,7 +128,7 @@ PrankCall is your friend (but, oddly, also your nemesis).
 
 =head1 METHODS
 
-=head2 new( host => $str, [ port => $str], [ cb => $sub_ref] )
+=head2 new( host => $str, [ port => $str], [ callback => $sub_ref] )
 
 The constructor can take a number of paremeters, being the usual host/port. It can also accept
 a callback method which is called after the socket completes, if there was an error this will come
@@ -153,4 +148,4 @@ Logan Bell, with help from Belden Lyman.
 
 =head1 LICENSE
 
-This is released under the "Don't blame me" license. Don't blame me for this idea.
+Copyright (c) 2013 Logan Bell and Shutterstock Inc (http://shutterstock.com).  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
