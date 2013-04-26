@@ -8,6 +8,7 @@ use warnings;
 use HTTP::Headers;
 use HTTP::Request;
 use IO::Socket;
+use Scalar::Util;
 use Try::Tiny;
 use URI;
 
@@ -25,10 +26,14 @@ sub new {
   } 
 
   my $self = {
-    host => $host,
-    port => $port,
-    raw_host => $raw_host,
-    callback => $params{callback},
+    blocking     => $params{blocking},
+    cache_socket => $params{cache_socket},
+    callback     => $params{callback},
+    host         => $host,
+    port         => $port,
+    raw_host     => $raw_host,
+    raw_string   => $params{raw_string},
+    timeout      => $params{timeout},
   };
 
   bless $self, $class;
@@ -52,13 +57,21 @@ sub post {
   return 1;
 }
 
+sub redial {
+  my $self = shift;
+  die "Yo Johny, I need to know what I'm dialing!" unless $self->{_last_req};
+  $self->_send_request($self->{_last_req});
+  return 1;
+}
+
 sub _build_request {
   my ($self, %params) = @_;
-  my $path = $params{path};
-  my $params = $params{params};
-  my $body  = $params{body};
 
-  my $uri = URI->new($self->{host});
+  my $path   = $params{path};
+  my $params = $params{params};
+  my $body   = $params{body};
+  my $uri    = URI->new($self->{host});
+
   $uri->path($path);
   $uri->port($self->{port});
   $uri->query_form($params);
@@ -82,20 +95,41 @@ sub _build_request {
 sub _send_request {
   my ($self, $req) = @_;
 
-  my $http_string = $req->as_string;
-  my $port = $self->{port} || $req->uri->port || '80';
-  my $raw_host =  $self->{raw_host} || $req->uri->host;
+  my $http_string  = $req->as_string;
+  my $port         = $self->{port} || $req->uri->port || '80';
+  my $raw_host     =  $self->{raw_host} || $req->uri->host;
+  my $timeout      = $self->{timeout};
+  my $blocking     = $self->{blocking} ||= 1;
+  my $cache_socket = $self->{cache_socket} ||=0;
+
+  $self->{_last_req} = $req;
 
   try {
-    my $remote = IO::Socket::INET->new( Proto => 'tcp', PeerAddr => $raw_host, PeerPort => $port ) || die "Ah shoot Johny $!";
+    my $remote = $cache_socket && $self->{_socket} ?  $self->{_socket} :
+      IO::Socket::INET->new( 
+        Proto => 'tcp', 
+        PeerAddr => $raw_host,
+        PeerPort => $port,
+        Blocking => $self->{blocking},
+        $timeout ? ( Timeout => $timeout, ) : (),
+      ) || die "Ah shoot Johny $!";
+
     $remote->autoflush(1);
     $remote->send($http_string);
-    close $remote;
+
+    if ( $cache_socket && !$self->{_socket}) {
+      $self->{_socket} = $remote;
+    } else {
+      close $remote;
+    }
+
     if ( $self->{callback}) {
-      $self->{callback}();
+      my $weak_self = weaken $self;
+      $self->{callback}($weak_self);
     }
   } catch {
-    $self->{callback}($_);
+    my $weak_self = weaken $self;
+    $self->{callback}($weak_self, $_) if $self->{callback};
   };
 }
 
@@ -113,8 +147,8 @@ PrankCall - call remote services and hang up without waiting for a response
         host => 'somewhere.beyond.the.sea',
         port => '10827',
         callback => sub {
-          my $error = pop;
-          # Callback called after service has been called
+          my ($prank, $error) = @_;
+          $prank->redial;
         }
     );
 
@@ -141,6 +175,10 @@ Will perform a GET request, also accepts an optional HTTP::Request object.
 =head2 post( path => $str, body => $hashref, [ request_obj => HTTP::Request ] )
 
 Will perform a POST request, also accepts an optional HTTP::Request object.
+
+=head2 redial
+
+Will perform a redial
 
 =head1 AUTHOR
 
