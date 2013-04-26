@@ -1,0 +1,12 @@
+Revision history for PrankCall
+
+{{$NEXT}}
+
+  - Added redial
+  - Added ability to cache sockets
+  - New override options for Timeout and Blocking
+  - Pass back self in callback
+
+0.001  2013-04-24
+
+  -Initial release
