@@ -1,7 +1,8 @@
 Revision history for PrankCall
 
 {{$NEXT}}
-
+  
+  - Release "Is your refrigerator running?"
   - Added redial
   - Added ability to cache sockets
   - New override options for Timeout and Blocking

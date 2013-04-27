@@ -6,7 +6,7 @@ use warnings;
 use HTTP::Headers;
 use HTTP::Request;
 use IO::Socket;
-use Scalar::Util;
+use Scalar::Util qw(weaken isweak);
 use Try::Tiny;
 use URI;
 
@@ -26,7 +26,6 @@ sub new {
   my $self = {
     blocking     => $params{blocking},
     cache_socket => $params{cache_socket},
-    callback     => $params{callback},
     host         => $host,
     port         => $port,
     raw_host     => $raw_host,
@@ -40,8 +39,9 @@ sub new {
 sub get {
   my ($self, %params) = @_;  
 
+  my $callback = delete $params{callback};
   my $req = $params{request_obj} || $self->_build_request(method => 'GET', %params);
-  $self->_send_request($req);
+  $self->_send_request($req, $callback);
 
   return 1;
 }
@@ -49,16 +49,17 @@ sub get {
 sub post {
   my ($self, %params) = @_;
 
+  my $callback = delete $params{callback};
   my $req = $params{request_obj} || $self->_build_request(method => 'POST', %params);
-  $self->_send_request($req);
+  $self->_send_request($req, $callback);
 
   return 1;
 }
 
 sub redial {
-  my $self = shift;
+  my ($self, %params) = @_;
   die "Yo Johny, I need to know what I'm dialing!" unless $self->{_last_req};
-  $self->_send_request($self->{_last_req});
+  $self->_send_request($self->{_last_req}, delete $params{callback});
   return 1;
 }
 
@@ -91,11 +92,11 @@ sub _build_request {
 }
 
 sub _send_request {
-  my ($self, $req) = @_;
+  my ($self, $req, $callback) = @_;
 
   my $http_string  = $req->as_string;
   my $port         = $self->{port} || $req->uri->port || '80';
-  my $raw_host     =  $self->{raw_host} || $req->uri->host;
+  my $raw_host     = $self->{raw_host} || $req->uri->host;
   my $timeout      = $self->{timeout};
   my $blocking     = $self->{blocking} ||= 1;
   my $cache_socket = $self->{cache_socket} ||=0;
@@ -121,13 +122,15 @@ sub _send_request {
       close $remote;
     }
 
-    if ( $self->{callback}) {
-      my $weak_self = weaken $self;
-      $self->{callback}($weak_self);
+    if ($callback) {
+      weaken $self;
+      $callback->($self);
     }
   } catch {
-    my $weak_self = weaken $self;
-    $self->{callback}($weak_self, $_) if $self->{callback};
+    if ($callback)  {
+      weaken $self if isweak $self;
+      $callback->($self, $_);
+    }
   };
 }
 
@@ -137,21 +140,26 @@ __END__
 
 =head1 NAME
 
-PrankCall - call remote services and hang up without waiting for a response
+PrankCall - call remote services and hang up without waiting for a response. A word of warning,
+this module should only be used for those who are comfortable with one way communication. 
 
 =head1 SYNOPSIS
 
     my $prank = PrankCall->new(
         host => 'somewhere.beyond.the.sea',
         port => '10827',
+    );
+
+    $prank->get(
+        path => '/',
+        params => { 'bobby' => 'darin' },
         callback => sub {
           my ($prank, $error) = @_;
           $prank->redial;
         }
     );
 
-    $prank->get(path => '/', params => { 'bobby' => 'darin' }); # note, prank calls always succeed
-    $prank->post(path => '/', body => { 'pizza' => 'hut' }); # note, prank calls always succeed
+    $prank->post(path => '/', body => { 'pizza' => 'hut' });
 
 =head1 DESCRIPTION
 
@@ -160,23 +168,21 @@ PrankCall is your friend (but, oddly, also your nemesis).
 
 =head1 METHODS
 
-=head2 new( host => $str, [ port => $str], [ callback => $sub_ref] )
+=head2 new( host => $str, [ port => $str] )
 
-The constructor can take a number of paremeters, being the usual host/port. It can also accept
-a callback method which is called after the socket completes, if there was an error this will come
-back as a parameter.
+The constructor can take a number of parameters, being the usual host/port. 
 
-=head2 get( path => $str, params => $hashref, [ request_obj => HTTP::Request ] )
+=head2 get( path => $str, params => $hashref, [ request_obj => HTTP::Request, callback => $sub_ref ] )
 
-Will perform a GET request, also accepts an optional HTTP::Request object.
+Will perform a GET request, also accepts an optional HTTP::Request object and call back
 
-=head2 post( path => $str, body => $hashref, [ request_obj => HTTP::Request ] )
+=head2 post( path => $str, body => $hashref, [ request_obj => HTTP::Request, callback => sub_ref ] )
 
-Will perform a POST request, also accepts an optional HTTP::Request object.
+Will perform a POST request, also accepts an optional HTTP::Request object and call back.
 
 =head2 redial
 
-Will perform a redial
+Will perform a redial. 
 
 =head1 AUTHOR
 
