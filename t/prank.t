@@ -64,14 +64,9 @@ $httpd = run_http_server {
 };
 
 $obj = $class->new(host => 'http://127.0.0.1', port => $httpd->port, cache_socket => 1, timeout => 10);
-$obj->post( path => '/http_post_request_with_body', body => { foo => 'bar' }, callback => sub { 
+$obj->post( path => '/http_post_request_with_body', body => { foo => 'bar' }, callback => sub {
   my ($prank, $error) = @_;
   sleep 1;
-  #$prank->post(path => '/http_post_request_with_body', body => { foo => 'bar2' });
-  #sleep 1;
-  $prank->redial
-}); 
-
-#$obj->redial;
+});
 
 sleep 5;

@@ -6,7 +6,7 @@ use Benchmark qw{cmpthese};
 
 sub prankit {
   my ($host, $path) = @_;
-  require PrankCall;  
+  require PrankCall;
   my $prank = PrankCall->new(host => $host, port => 5000);
   $prank->get(path => '/');
 }

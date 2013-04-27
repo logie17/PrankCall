@@ -21,7 +21,7 @@ sub new {
     $port ||= $params{port};
     $raw_host = $host;
     $raw_host =~ s{https?://}{};
-  } 
+  }
 
   my $self = {
     blocking     => $params{blocking},
@@ -37,7 +37,7 @@ sub new {
 }
 
 sub get {
-  my ($self, %params) = @_;  
+  my ($self, %params) = @_;
 
   my $callback = delete $params{callback};
   my $req = $params{request_obj} || $self->_build_request(method => 'GET', %params);
@@ -105,8 +105,8 @@ sub _send_request {
 
   try {
     my $remote = $cache_socket && $self->{_socket} ?  $self->{_socket} :
-      IO::Socket::INET->new( 
-        Proto => 'tcp', 
+      IO::Socket::INET->new(
+        Proto => 'tcp',
         PeerAddr => $raw_host,
         PeerPort => $port,
         Blocking => $self->{blocking},
@@ -127,7 +127,7 @@ sub _send_request {
       $callback->($self);
     }
   } catch {
-    if ($callback)  {
+    if ($callback) {
       weaken $self if isweak $self;
       $callback->($self, $_);
     }
@@ -141,7 +141,7 @@ __END__
 =head1 NAME
 
 PrankCall - call remote services and hang up without waiting for a response. A word of warning,
-this module should only be used for those who are comfortable with one way communication. 
+this module should only be used for those who are comfortable with one way communication
 
 =head1 SYNOPSIS
 
@@ -164,13 +164,13 @@ this module should only be used for those who are comfortable with one way commu
 =head1 DESCRIPTION
 
 Sometimes you just wanna call someone and hang up without waiting for them to say anything.
-PrankCall is your friend (but, oddly, also your nemesis).
+PrankCall is your friend (but, oddly, also your nemesis)
 
 =head1 METHODS
 
 =head2 new( host => $str, [ port => $str] )
 
-The constructor can take a number of parameters, being the usual host/port. 
+The constructor can take a number of parameters, being the usual host/port
 
 =head2 get( path => $str, params => $hashref, [ request_obj => HTTP::Request, callback => $sub_ref ] )
 
@@ -178,16 +178,16 @@ Will perform a GET request, also accepts an optional HTTP::Request object and ca
 
 =head2 post( path => $str, body => $hashref, [ request_obj => HTTP::Request, callback => sub_ref ] )
 
-Will perform a POST request, also accepts an optional HTTP::Request object and call back.
+Will perform a POST request, also accepts an optional HTTP::Request object and call back
 
 =head2 redial
 
-Will perform a redial. 
+Will perform a redial
 
 =head1 AUTHOR
 
-Logan Bell, with help from Belden Lyman.
+Logan Bell, with help from Belden Lyman
 
 =head1 LICENSE
 
-Copyright (c) 2013 Logan Bell and Shutterstock Inc (http://shutterstock.com).  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+Copyright (c) 2013 Logan Bell and Shutterstock Inc (http://shutterstock.com).  All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself

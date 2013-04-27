@@ -5,7 +5,7 @@ use warnings;
 use Benchmark qw{cmpthese};
 use PrankCall;
 
-# plackup --no-default-middleware --e 'sub { return [200,[ "Content-Type" => "text/plain"],[ "yo" ]]}' 
+# plackup --no-default-middleware --e 'sub { return [200,[ "Content-Type" => "text/plain"],[ "yo" ]]}'
 # NYTPROF=file=/tmp/nytprof_prank.out perl -d:NYTProf -Ilib xt/nytprf_prank.pl && nytprofhtml --file /tmp/nytprof_prank.out  --out prank
 
 for (1..2000) {
