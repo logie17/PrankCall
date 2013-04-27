@@ -67,6 +67,7 @@ $obj = $class->new(host => 'http://127.0.0.1', port => $httpd->port, cache_socke
 $obj->post( path => '/http_post_request_with_body', body => { foo => 'bar' }, callback => sub {
   my ($prank, $error) = @_;
   sleep 1;
+  $prank->redial;
 });
 
 sleep 5;
