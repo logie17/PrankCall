@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More;# tests => 2;
+use Test::More;
 use Test::MockObject;
 use Test::Resub qw(resub);
 use HTTP::Request;
