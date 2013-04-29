@@ -2,6 +2,9 @@ Revision history for PrankCall
 
 {{$NEXT}}
 
+  - Release "Hello, I'd like to speak with a Mr. Snotball, first name Ura"
+  - Made unit tests a bit more robust.
+
 0.002 2013-04-26
   
   - Release "Is your refrigerator running?"
