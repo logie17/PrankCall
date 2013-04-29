@@ -11,16 +11,16 @@ my $class = 'PrankCall';
 
 subtest 'get_tests' => sub {
   my ($socket_new_call, $remote_test) = generate_test_socket();
-  
+
   my $obj = $class->new(host => 'http://127.0.0.1', port => 3450);
   $obj->get(path => '/', params => { 'foo' => 'bar' });
-  
+
   ok $socket_new_call->called;
   my ($name, $args);
   ($name, $args) = $remote_test->next_call;
   is $name, 'autoflush';
   is $args->[-1], 1;
-  
+
   ($name, $args) = $remote_test->next_call;
   is $name, "send";
   is $args->[-1], "GET http://127.0.0.1:3450/?foo=bar HTTP/1.1\nContent-Type: application/x-www-form-urlencoded\n\n";
@@ -37,11 +37,10 @@ subtest 'get_tests_with_request_obj' => sub {
   ($name, $args) = $remote_test->next_call;
   is $name, 'autoflush';
   is $args->[-1], 1;
-  
+
   ($name, $args) = $remote_test->next_call;
   is $name, "send";
   is $args->[-1], "GET http://127.0.0.1:1212/http_request\n\n";
-
 };
 
 subtest 'post_tests' => sub {
@@ -55,11 +54,10 @@ subtest 'post_tests' => sub {
   ($name, $args) = $remote_test->next_call;
   is $name, 'autoflush';
   is $args->[-1], 1;
-  
+
   ($name, $args) = $remote_test->next_call;
   is $name, "send";
   is $args->[-1], "POST http://127.0.0.1:4334/http_post_request\n\n";
-
 };
 
 subtest 'post_tests_body_redial' => sub {
@@ -77,7 +75,7 @@ subtest 'post_tests_body_redial' => sub {
   ($name, $args) = $remote_test->next_call;
   is $name, 'autoflush';
   is $args->[-1], 1;
-  
+
   ($name, $args) = $remote_test->next_call;
   is $name, "send";
   is $args->[-1], "POST http://127.0.0.1:31214/http_post_request_with_body HTTP/1.1\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\n\nfoo=bar\n";
@@ -85,11 +83,10 @@ subtest 'post_tests_body_redial' => sub {
   ($name, $args) = $remote_test->next_call;
   is $name, 'autoflush';
   is $args->[-1], 1;
-  
+
   ($name, $args) = $remote_test->next_call;
   is $name, "send";
   is $args->[-1], "POST http://127.0.0.1:31214/http_post_request_with_body HTTP/1.1\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\n\nfoo=bar\n";
-
 };
 
 done_testing;
