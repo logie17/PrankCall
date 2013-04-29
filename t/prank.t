@@ -1,73 +1,103 @@
 use strict;
 use warnings;
-use Test::More tests => 9;
-use Test::Fake::HTTPD;
+use Test::More;# tests => 2;
+use Test::MockObject;
+use Test::Resub qw(resub);
 use HTTP::Request;
 
 require_ok('PrankCall');
 
 my $class = 'PrankCall';
-my ($obj, $httpd);
 
-my $called = 0;
-$httpd = run_http_server {
-  my $request = shift;
-  my $path = $request->uri->path;
-  if ( $path eq '/' ) {
-    $called++;
-  }
-  is $called, 1;
-  return [ 200 , [ 'Content-Type' => 'text/plain'], ['Success!'] ];
+subtest 'get_tests' => sub {
+  my ($socket_new_call, $remote_test) = generate_test_socket();
+  
+  my $obj = $class->new(host => 'http://127.0.0.1', port => 3450);
+  $obj->get(path => '/', params => { 'foo' => 'bar' });
+  
+  ok $socket_new_call->called;
+  my ($name, $args);
+  ($name, $args) = $remote_test->next_call;
+  is $name, 'autoflush';
+  is $args->[-1], 1;
+  
+  ($name, $args) = $remote_test->next_call;
+  is $name, "send";
+  is $args->[-1], "GET http://127.0.0.1:3450/?foo=bar HTTP/1.1\nContent-Type: application/x-www-form-urlencoded\n\n";
 };
 
-ok $httpd;
+subtest 'get_tests_with_request_obj' => sub {
+  my ($socket_new_call, $remote_test) = generate_test_socket();
 
-$obj = $class->new(host => 'http://127.0.0.1', port => $httpd->port);
-$obj->get(path => '/', params => { 'foo' => 'bar' });
+  my $obj = $class->new;
+  $obj->get( request_obj => HTTP::Request->new(GET => join('/', 'http://127.0.0.1:1212', 'http_request')));
 
-$httpd = run_http_server {
-  my $request = shift;
-  my $path = $request->uri->path;
-  if ( $path eq '/http_request' ) {
-    $called++;
-  }
-  is $called, 1;
-  return [ 200 , [ 'Content-Type' => 'text/plain'], ['Success!'] ];
+  ok $socket_new_call->called;
+  my ($name, $args);
+  ($name, $args) = $remote_test->next_call;
+  is $name, 'autoflush';
+  is $args->[-1], 1;
+  
+  ($name, $args) = $remote_test->next_call;
+  is $name, "send";
+  is $args->[-1], "GET http://127.0.0.1:1212/http_request\n\n";
+
 };
 
-$obj = $class->new;
-$obj->get( request_obj => HTTP::Request->new(GET => join('/', $httpd->endpoint, 'http_request')));
+subtest 'post_tests' => sub {
+  my ($socket_new_call, $remote_test) = generate_test_socket();
 
-$httpd = run_http_server {
-  my $request = shift;
-  my $path = $request->uri->path;
-  if ( $path eq '/http_post_request' ) {
-    $called++;
-  }
-  is $called, 1;
-  return [ 200 , [ 'Content-Type' => 'text/plain'], ['Success!'] ];
+  my $obj = $class->new;
+  $obj->post( request_obj => HTTP::Request->new(POST => join('/', 'http://127.0.0.1:4334', 'http_post_request')));
+
+  ok $socket_new_call->called;
+  my ($name, $args);
+  ($name, $args) = $remote_test->next_call;
+  is $name, 'autoflush';
+  is $args->[-1], 1;
+  
+  ($name, $args) = $remote_test->next_call;
+  is $name, "send";
+  is $args->[-1], "POST http://127.0.0.1:4334/http_post_request\n\n";
+
 };
 
-$obj = $class->new;
-$obj->post( request_obj => HTTP::Request->new(POST => join('/', $httpd->endpoint, 'http_post_request')));
+subtest 'post_tests_body_redial' => sub {
+  my ($socket_new_call, $remote_test) = generate_test_socket();
 
-$httpd = run_http_server {
-  my $called;
-  my $request = shift;
-  my $path = $request->uri->path;
-  if ( $path eq '/http_post_request_with_body' ) {
-    is $request->content, 'foo=bar';
-    $called++;
-  }
-  is $called, 1;
-  return [ 200 , [ 'Content-Type' => 'text/plain'], ['Success!'] ];
+  my $obj = $class->new(host => 'http://127.0.0.1', port => 31214, cache_socket => 1, timeout => 10);
+  $obj->post( path => '/http_post_request_with_body', body => { foo => 'bar' }, callback => sub {
+    my ($prank, $error) = @_;
+    $prank->redial;
+  });
+
+  ok $socket_new_call->called;
+  my ($name, $args);
+
+  ($name, $args) = $remote_test->next_call;
+  is $name, 'autoflush';
+  is $args->[-1], 1;
+  
+  ($name, $args) = $remote_test->next_call;
+  is $name, "send";
+  is $args->[-1], "POST http://127.0.0.1:31214/http_post_request_with_body HTTP/1.1\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\n\nfoo=bar\n";
+
+  ($name, $args) = $remote_test->next_call;
+  is $name, 'autoflush';
+  is $args->[-1], 1;
+  
+  ($name, $args) = $remote_test->next_call;
+  is $name, "send";
+  is $args->[-1], "POST http://127.0.0.1:31214/http_post_request_with_body HTTP/1.1\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\n\nfoo=bar\n";
+
 };
 
-$obj = $class->new(host => 'http://127.0.0.1', port => $httpd->port, cache_socket => 1, timeout => 10);
-$obj->post( path => '/http_post_request_with_body', body => { foo => 'bar' }, callback => sub {
-  my ($prank, $error) = @_;
-  sleep 1;
-  $prank->redial;
-});
+done_testing;
 
-sleep 5;
+sub generate_test_socket {
+  my $remote_test = Test::MockObject->new;
+  $remote_test->mock('autoflush', sub { return 1 });
+  $remote_test->mock('send', sub { return 1 });
+  my $socket_new_call = resub 'IO::Socket::INET::new', sub { return $remote_test };
+  return ($socket_new_call, $remote_test);
+}
