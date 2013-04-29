@@ -2,6 +2,8 @@ Revision history for PrankCall
 
 {{$NEXT}}
 
+0.003 2013-04-29
+
   - Release "Hello, I'd like to speak with a Mr. Snotball, first name Ura"
   - Made unit tests a bit more robust.
 
