@@ -128,7 +128,6 @@ sub _generate_http_string {
 sub _send_request {
   my ($self, $req, $callback) = @_;
 
-  # Note: This will not play nice when proxying
   my $port         = $self->{port} || $req->uri->port || '80';
   my $raw_host     = $self->{raw_host} || $req->uri->host;
   my $timeout      = $self->{timeout};
