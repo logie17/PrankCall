@@ -181,6 +181,8 @@ this module should only be used for those who are comfortable with one way commu
 
 =head1 SYNOPSIS
 
+    use PrankCall user_agent => 'Hangup-Howey';
+
     my $prank = PrankCall->new(
         host => 'somewhere.beyond.the.sea',
         port => '10827',
