@@ -2,6 +2,10 @@ Revision history for PrankCall
 
 {{$NEXT}}
 
+  - Updated logic around how a HTTP request is generated. Instead of absolute URLs
+    after the HTTP METHOD they are now relative. 
+  - Added a user agent string and the ability to override it via import
+
 0.003 2013-04-29
 
   - Release "Hello, I'd like to speak with a Mr. Snotball, first name Ura"
