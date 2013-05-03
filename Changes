@@ -2,6 +2,8 @@ Revision history for PrankCall
 
 {{$NEXT}}
 
+0.004 2013-05-03
+
   - Updated logic around how a HTTP request is generated. Instead of absolute URLs
     after the HTTP METHOD they are now relative. 
   - Added a user agent string and the ability to override it via import
