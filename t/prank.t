@@ -3,7 +3,6 @@ use warnings;
 use Test::More;
 use Test::MockObject;
 use Test::Resub qw(resub);
-use HTTP::Request;
 
 require_ok('PrankCall');
 
@@ -31,46 +30,6 @@ subtest 'get_tests' => sub {
   is $name, "close";
 };
 
-subtest 'get_tests_with_request_obj' => sub {
-  my ($socket_new_call, $remote_test) = generate_test_socket();
-
-  my $obj = $class->new;
-  $obj->get( request_obj => HTTP::Request->new(GET => join('/', 'http://127.0.0.1:1212', 'http_request')));
-
-  ok $socket_new_call->called;
-  my ($name, $args);
-  ($name, $args) = $remote_test->next_call;
-  is $name, 'autoflush';
-  is $args->[-1], 1;
-
-  ($name, $args) = $remote_test->next_call;
-  is $name, "syswrite";
-  is $args->[-1], "GET /http_request\n\n";
-
-  ($name, $args) = $remote_test->next_call;
-  is $name, "close";
-};
-
-subtest 'post_tests' => sub {
-  my ($socket_new_call, $remote_test) = generate_test_socket();
-
-  my $obj = $class->new;
-  $obj->post( request_obj => HTTP::Request->new(POST => join('/', 'http://127.0.0.1:4334', 'http_post_request')));
-
-  ok $socket_new_call->called;
-  my ($name, $args);
-  ($name, $args) = $remote_test->next_call;
-  is $name, 'autoflush';
-  is $args->[-1], 1;
-
-  ($name, $args) = $remote_test->next_call;
-  is $name, "syswrite";
-  is $args->[-1], "POST /http_post_request\n\n";
-
-  ($name, $args) = $remote_test->next_call;
-  is $name, "close";
-};
-
 subtest 'post_tests_body_redial' => sub {
   my ($socket_new_call, $remote_test) = generate_test_socket();
 
@@ -89,16 +48,14 @@ subtest 'post_tests_body_redial' => sub {
 
   ($name, $args) = $remote_test->next_call;
   is $name, "syswrite";
-  is $args->[-1], "POST /http_post_request_with_body HTTP/1.1\nHost: 127.0.0.1\nUser-Agent: $user_agent\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\n\nfoo=bar\n";
-
+  is $args->[-1], "POST /http_post_request_with_body HTTP/1.1\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\nHost: 127.0.0.1\nUser-Agent: $user_agent\n\nfoo=bar\n";
   ($name, $args) = $remote_test->next_call;
   is $name, 'autoflush';
   is $args->[-1], 1;
 
   ($name, $args) = $remote_test->next_call;
   is $name, "syswrite";
-  is $args->[-1], "POST /http_post_request_with_body HTTP/1.1\nHost: 127.0.0.1\nUser-Agent: $user_agent\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\n\nfoo=bar\n";
-
+  is $args->[-1], "POST /http_post_request_with_body HTTP/1.1\nContent-Length: 7\nContent-Type: application/x-www-form-urlencoded\nHost: 127.0.0.1\nUser-Agent: $user_agent\n\nfoo=bar\n";
   # Close should not be called since we're caching.
   ($name, $args) = $remote_test->next_call;
   is $name, undef;
@@ -119,8 +76,8 @@ subtest 'override_useragent' => sub {
 
   ($name, $args) = $remote_test->next_call;
   is $name, "syswrite";
-  is $args->[-1], "GET /?foo=bar HTTP/1.1\nHost: 127.0.0.1\nUser-Agent: foo\nContent-Type: application/x-www-form-urlencoded\n\n";
-};
+  is $args->[-1], "GET /?foo=bar HTTP/1.1\nContent-Type: application/x-www-form-urlencoded\nHost: 127.0.0.1\nUser-Agent: foo\n\n";
+ };
 
 done_testing;
 

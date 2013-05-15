@@ -3,8 +3,8 @@ package PrankCall;
 use strict;
 use warnings;
 
-use HTTP::Headers;
-use HTTP::Request;
+use Furl::Headers;
+use Furl::Request;
 use IO::Socket;
 use Scalar::Util qw(weaken isweak);
 use Try::Tiny;
@@ -83,15 +83,12 @@ sub _build_request {
   $uri->path($path);
   $uri->port($self->{port});
   $uri->query_form($params);
-  my $headers = HTTP::Headers->new;
 
-  $headers->header(
-    'Content-Type' => 'application/x-www-form-urlencoded',
-    'User_Agent' => $USER_AGENT,
-    'Host' => $self->{raw_host},
-  );
-
-  my $req = HTTP::Request->new($params{method} => $uri, $headers);
+  my $req = Furl::Request->new($params{method} => $uri, { 
+    'Content-Type' => ['application/x-www-form-urlencoded'],
+    'User_Agent'   => [$USER_AGENT],
+    'Host'         => [$self->{raw_host}],
+  });
 
   if ($body) {
     my $uri = URI->new('http:');
@@ -108,13 +105,13 @@ sub _build_request {
 sub _generate_http_string {
   my ($self, $req) = @_;
 
-  my $request_path = $req->uri->path_query;
-  $request_path    = "/$request_path" unless $request_path =~ m{^/};
-  $request_path   .= ' '. $req->protocol if $req->protocol;
-
-  my $http_string  = join (' ', $req->method, $request_path ) . "\n";
+  my $http_string = $req->request_line . "\n";
+  #$request_path    = "/$request_path" unless $request_path =~ m{^/};
+  #$request_path   .= ' '. $req->protocol if $req->protocol;
 
   if ( $req->headers ) {
+    use Data::Dumper;
+    warn Dumper($req->headers);
     $http_string .= join ("\n", $req->headers->as_string) . "\n";
   }
 
